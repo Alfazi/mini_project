@@ -84,30 +84,40 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _book!.coverImage,
-                            width: 120,
-                            height: 180,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 120,
-                                height: 180,
-                                color: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.book,
-                                  size: 50,
-                                  color: Colors.grey,
+                          child: _book!.coverImage != null
+                              ? Image.network(
+                                  _book!.coverImage!,
+                                  width: 120,
+                                  height: 180,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 120,
+                                      height: 180,
+                                      color: Colors.grey[300],
+                                      child: const Icon(
+                                        Icons.book,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  width: 120,
+                                  height: 180,
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.book,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
                         ),
                         const SizedBox(width: 16),
 
@@ -116,7 +126,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _book!.title,
+                                _book!.title ?? 'No Title',
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -124,7 +134,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                _book!.author.name,
+                                _book!.author?.name ?? 'Unknown Author',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[600],
@@ -155,7 +165,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _book!.summary,
+                      _book!.summary ?? 'No summary available',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[700],
@@ -205,7 +215,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 ),
                               ),
                               Text(
-                                _book!.details.price,
+                                _book!.details?.price ?? 'Price not available',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -270,8 +280,10 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        if (_book!.buyLinks.isNotEmpty) {
-                          _launchURL(_book!.buyLinks.first.url);
+                        if (_book!.buyLinks != null &&
+                            _book!.buyLinks!.isNotEmpty &&
+                            _book!.buyLinks!.first.url != null) {
+                          _launchURL(_book!.buyLinks!.first.url!);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

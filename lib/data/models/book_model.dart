@@ -20,29 +20,29 @@ class BookResponse {
 class Book {
   @JsonKey(name: '_id')
   final String id;
-  final String title;
+  final String? title;
   @JsonKey(name: 'cover_image')
-  final String coverImage;
-  final Author author;
+  final String? coverImage;
+  final Author? author;
   final Category? category;
-  final String summary;
-  final Details details;
-  final List<Tag> tags;
+  final String? summary;
+  final Details? details;
+  final List<Tag>? tags;
   @JsonKey(name: 'buy_links')
-  final List<BuyLink> buyLinks;
-  final String publisher;
+  final List<BuyLink>? buyLinks;
+  final String? publisher;
 
   Book({
     required this.id,
-    required this.title,
-    required this.coverImage,
-    required this.author,
+    this.title,
+    this.coverImage,
+    this.author,
     this.category,
-    required this.summary,
-    required this.details,
-    required this.tags,
-    required this.buyLinks,
-    required this.publisher,
+    this.summary,
+    this.details,
+    this.tags,
+    this.buyLinks,
+    this.publisher,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);
@@ -52,10 +52,10 @@ class Book {
 
 @JsonSerializable()
 class Author {
-  final String name;
-  final String url;
+  final String? name;
+  final String? url;
 
-  Author({required this.name, required this.url});
+  Author({this.name, this.url});
 
   factory Author.fromJson(Map<String, dynamic> json) => _$AuthorFromJson(json);
 
@@ -78,24 +78,24 @@ class Category {
 @JsonSerializable()
 class Details {
   @JsonKey(name: 'no_gm')
-  final String noGm;
-  final String isbn;
-  final String price;
+  final String? noGm;
+  final String? isbn;
+  final String? price;
   @JsonKey(name: 'total_pages')
-  final String totalPages;
-  final String size;
+  final String? totalPages;
+  final String? size;
   @JsonKey(name: 'published_date')
-  final String publishedDate;
-  final String format;
+  final String? publishedDate;
+  final String? format;
 
   Details({
-    required this.noGm,
-    required this.isbn,
-    required this.price,
-    required this.totalPages,
-    required this.size,
-    required this.publishedDate,
-    required this.format,
+    this.noGm,
+    this.isbn,
+    this.price,
+    this.totalPages,
+    this.size,
+    this.publishedDate,
+    this.format,
   });
 
   factory Details.fromJson(Map<String, dynamic> json) =>
@@ -106,10 +106,10 @@ class Details {
 
 @JsonSerializable()
 class Tag {
-  final String name;
-  final String url;
+  final String? name;
+  final String? url;
 
-  Tag({required this.name, required this.url});
+  Tag({this.name, this.url});
 
   factory Tag.fromJson(Map<String, dynamic> json) => _$TagFromJson(json);
 
@@ -118,10 +118,10 @@ class Tag {
 
 @JsonSerializable()
 class BuyLink {
-  final String store;
-  final String url;
+  final String? store;
+  final String? url;
 
-  BuyLink({required this.store, required this.url});
+  BuyLink({this.store, this.url});
 
   factory BuyLink.fromJson(Map<String, dynamic> json) =>
       _$BuyLinkFromJson(json);

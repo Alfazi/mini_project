@@ -22,6 +22,8 @@ class _HomePageState extends State<HomePage> {
   bool _hasMoreData = true;
   String _selectedGenre = '';
   String _searchKeyword = '';
+  String _selectedSort = '';
+  String _selectedYear = '';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
@@ -85,6 +87,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await _bookApiService.getBooks(
         page: _currentPage,
+        sort: _selectedSort.isEmpty ? null : _selectedSort,
+        year: _selectedYear.isEmpty ? null : _selectedYear,
         genre: _selectedGenre.isEmpty ? null : _selectedGenre,
         keyword: _searchKeyword.isEmpty ? null : _searchKeyword,
       );
@@ -118,6 +122,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await _bookApiService.getBooks(
         page: _currentPage,
+        sort: _selectedSort.isEmpty ? null : _selectedSort,
+        year: _selectedYear.isEmpty ? null : _selectedYear,
         genre: _selectedGenre.isEmpty ? null : _selectedGenre,
         keyword: _searchKeyword.isEmpty ? null : _searchKeyword,
       );
@@ -138,13 +144,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _onGenreSelected(String genre) {
-    setState(() {
-      _selectedGenre = _selectedGenre == genre ? '' : genre;
-    });
-    _loadBooks();
-  }
-
   void _onSearch(String keyword) {
     setState(() {
       _searchKeyword = keyword;
@@ -163,6 +162,222 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
+  }
+
+  void _showFilterBottomSheet() {
+    String tempSort = _selectedSort;
+    String tempYear = _selectedYear;
+    String tempGenre = _selectedGenre;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filter & Sort',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Urutkan',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildFilterChip('Terbaru', 'newest', tempSort, (value) {
+                      setModalState(() => tempSort = value);
+                    }),
+                    _buildFilterChip('Terlama', 'oldest', tempSort, (value) {
+                      setModalState(() => tempSort = value);
+                    }),
+                    _buildFilterChip('Judul A-Z', 'titleAZ', tempSort, (value) {
+                      setModalState(() => tempSort = value);
+                    }),
+                    _buildFilterChip('Judul Z-A', 'titleZA', tempSort, (value) {
+                      setModalState(() => tempSort = value);
+                    }),
+                    _buildFilterChip(
+                      'Harga: Rendah-Tinggi',
+                      'priceLowHigh',
+                      tempSort,
+                      (value) {
+                        setModalState(() => tempSort = value);
+                      },
+                    ),
+                    _buildFilterChip(
+                      'Harga: Tinggi-Rendah',
+                      'priceHighLow',
+                      tempSort,
+                      (value) {
+                        setModalState(() => tempSort = value);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Tahun',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Masukkan tahun (contoh: 2020)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  controller: TextEditingController(text: tempYear),
+                  onChanged: (value) {
+                    tempYear = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Genre',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                if (_isLoadingGenres)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 120),
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _genres.map((genre) {
+                          return _buildFilterChip(genre, genre, tempGenre, (
+                            value,
+                          ) {
+                            setModalState(() => tempGenre = value);
+                          });
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedSort = '';
+                            _selectedYear = '';
+                            _selectedGenre = '';
+                          });
+                          Navigator.pop(context);
+                          _loadBooks();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Reset'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedSort = tempSort;
+                            _selectedYear = tempYear;
+                            _selectedGenre = tempGenre;
+                          });
+                          Navigator.pop(context);
+                          _loadBooks();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4682A9),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Terapkan',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+    String label,
+    String value,
+    String selectedValue,
+    Function(String) onSelected,
+  ) {
+    final isSelected = selectedValue == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        onSelected(isSelected ? '' : value);
+      },
+      backgroundColor: Colors.grey[300],
+      selectedColor: Colors.grey[500],
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 13,
+      ),
+      side: BorderSide.none,
+      shape: const StadiumBorder(),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    );
   }
 
   @override
@@ -202,80 +417,58 @@ class _HomePageState extends State<HomePage> {
 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    onSubmitted: _onSearch,
-                    decoration: InputDecoration(
-                      hintText: 'Cari buku...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.blue,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                _isLoadingGenres
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Center(
-                          child: SizedBox(
-                            height: 40,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onSubmitted: _onSearch,
+                          decoration: InputDecoration(
+                            hintText: 'Cari buku...',
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                         ),
-                      )
-                    : SizedBox(
-                        height: 40,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _genres.length,
-                          itemBuilder: (context, index) {
-                            final genre = _genres[index];
-                            final isSelected = _selectedGenre == genre;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                label: Text(genre),
-                                selected: isSelected,
-                                onSelected: (_) => _onGenreSelected(genre),
-                                backgroundColor: Colors.grey[200],
-                                selectedColor: Colors.blue[100],
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.blue[900]
-                                      : Colors.black,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                side: BorderSide.none,
-                                shape: const StadiumBorder(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                              ),
-                            );
-                          },
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.filter_list,
+                            color:
+                                (_selectedSort.isNotEmpty ||
+                                    _selectedYear.isNotEmpty ||
+                                    _selectedGenre.isNotEmpty)
+                                ? Colors.blue[700]
+                                : Colors.grey[700],
+                          ),
+                          onPressed: _showFilterBottomSheet,
                         ),
                       ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 16),
 
@@ -342,19 +535,30 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: Image.network(
-                  book.coverImage,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.book, size: 50, color: Colors.grey),
+                child: book.coverImage != null
+                    ? Image.network(
+                        book.coverImage!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.book, size: 50, color: Colors.grey),
+                        ),
                       ),
-                    );
-                  },
-                ),
               ),
             ),
 
@@ -366,7 +570,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      book.title,
+                      book.title ?? 'No Title',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -376,7 +580,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      book.author.name,
+                      book.author?.name ?? 'Unknown Author',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: Colors.grey[600]),
@@ -414,8 +618,10 @@ class _HomePageState extends State<HomePage> {
                             height: 28,
                             child: ElevatedButton(
                               onPressed: () {
-                                if (book.buyLinks.isNotEmpty) {
-                                  _launchURL(book.buyLinks.first.url);
+                                if (book.buyLinks != null &&
+                                    book.buyLinks!.isNotEmpty &&
+                                    book.buyLinks!.first.url != null) {
+                                  _launchURL(book.buyLinks!.first.url!);
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
