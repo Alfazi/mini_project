@@ -12,10 +12,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     : _firebaseAuth = FirebaseAuth.instance,
       _googleSignIn = GoogleSignIn(),
       super(const AuthInitial()) {
+    on<CheckAuthStatus>(_onCheckAuthStatus);
     on<SignInRequested>(_onSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<SignOutRequested>(_onSignOutRequested);
+  }
+
+  Future<void> _onCheckAuthStatus(
+    CheckAuthStatus event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        emit(AuthAuthenticated(userId: user.uid, email: user.email ?? ''));
+      } else {
+        emit(const AuthUnauthenticated());
+      }
+    } catch (e) {
+      emit(const AuthUnauthenticated());
+    }
   }
 
   Future<void> _onSignInRequested(
@@ -116,7 +134,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
