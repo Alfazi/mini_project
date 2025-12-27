@@ -20,7 +20,7 @@ abstract class BookApiService {
   });
 
   @GET('${ApiConstants.books}/{id}')
-  Future<BookResponse> getBookById(@Path('id') String id);
+  Future<Book> getBookById(@Path('id') String id);
 
   @GET('/stats/genre')
   Future<GenreStatsResponse> getGenreStats();

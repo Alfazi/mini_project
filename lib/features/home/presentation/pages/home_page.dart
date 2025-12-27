@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/datasources/book_api_service.dart';
 import '../../../../data/models/book_model.dart';
+import 'book_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -46,6 +48,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadGenres() async {
     try {
       final response = await _bookApiService.getGenreStats();
+      if (!mounted) return;
       setState(() {
         _genres = response.genreStatistics
             .where((stat) => stat.genre != null && stat.genre!.isNotEmpty)
@@ -55,6 +58,7 @@ class _HomePageState extends State<HomePage> {
         _isLoadingGenres = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         // Fallback ke genre statis kalo API error
         _genres = [
@@ -84,6 +88,7 @@ class _HomePageState extends State<HomePage> {
         genre: _selectedGenre.isEmpty ? null : _selectedGenre,
         keyword: _searchKeyword.isEmpty ? null : _searchKeyword,
       );
+      if (!mounted) return;
       setState(() {
         _books = response.books ?? [];
         _isLoading = false;
@@ -92,6 +97,7 @@ class _HomePageState extends State<HomePage> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(
@@ -115,6 +121,7 @@ class _HomePageState extends State<HomePage> {
         genre: _selectedGenre.isEmpty ? null : _selectedGenre,
         keyword: _searchKeyword.isEmpty ? null : _searchKeyword,
       );
+      if (!mounted) return;
       setState(() {
         _books.addAll(response.books ?? []);
         _isLoadingMore = false;
@@ -123,6 +130,7 @@ class _HomePageState extends State<HomePage> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoadingMore = false;
         _currentPage--; // Rollback page number on error
@@ -142,6 +150,19 @@ class _HomePageState extends State<HomePage> {
       _searchKeyword = keyword;
     });
     _loadBooks();
+  }
+
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka link')),
+        );
+      }
+    }
   }
 
   @override
@@ -245,6 +266,11 @@ class _HomePageState extends State<HomePage> {
                                       : FontWeight.normal,
                                 ),
                                 side: BorderSide.none,
+                                shape: const StadiumBorder(),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                               ),
                             );
                           },
@@ -295,113 +321,135 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBookCard(Book book) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-              child: Image.network(
-                book.coverImage,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(Icons.book, size: 50, color: Colors.grey),
-                    ),
-                  );
-                },
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(bookId: book.id),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+                child: Image.network(
+                  book.coverImage,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(Icons.book, size: 50, color: Colors.grey),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
 
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book.author.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                  const Spacer(),
+                    const SizedBox(height: 4),
+                    Text(
+                      book.author.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
+                    const Spacer(),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 28,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: Sewa
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF91C8E4),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 28,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // TODO: Sewa
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF91C8E4),
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                elevation: 0,
                               ),
-                            ),
-                            child: const Text(
-                              'Sewa',
-                              style: TextStyle(fontSize: 11),
+                              child: const Text(
+                                'Sewa',
+                                style: TextStyle(fontSize: 11),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: SizedBox(
-                          height: 28,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: Beli
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF4682A9),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: SizedBox(
+                            height: 28,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (book.buyLinks.isNotEmpty) {
+                                  _launchURL(book.buyLinks.first.url);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Link pembelian tidak tersedia',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF4682A9),
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                elevation: 0,
                               ),
-                            ),
-                            child: const Text(
-                              'Beli',
-                              style: TextStyle(fontSize: 11),
+                              child: const Text(
+                                'Beli',
+                                style: TextStyle(fontSize: 11),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
