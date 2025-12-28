@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../data/datasources/book_api_service.dart';
 import '../../../../data/models/book_model.dart';
-import 'book_rental_page.dart';
+import '../../../../data/models/rental_model.dart';
+import '../../../../data/services/rental_service.dart';
 
-class BookDetailPage extends StatefulWidget {
+class BookRentalPage extends StatefulWidget {
   final String bookId;
 
-  const BookDetailPage({super.key, required this.bookId});
+  const BookRentalPage({super.key, required this.bookId});
 
   @override
-  State<BookDetailPage> createState() => _BookDetailPageState();
+  State<BookRentalPage> createState() => _BookRentalPageState();
 }
 
-class _BookDetailPageState extends State<BookDetailPage> {
+class _BookRentalPageState extends State<BookRentalPage> {
   late BookApiService _bookApiService;
+  final RentalService _rentalService = RentalService();
   Book? _book;
   bool _isLoading = true;
+  bool _isRenting = false;
+  int _rentalDays = 1;
 
   @override
   void initState() {
@@ -46,15 +50,67 @@ class _BookDetailPageState extends State<BookDetailPage> {
     }
   }
 
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+  int get totalPrice => 5000 * _rentalDays;
+
+  Future<void> _rentBook() async {
+    if (_book == null || _isRenting) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat membuka link')),
+          const SnackBar(content: Text('Anda harus login terlebih dahulu')),
         );
+      }
+      return;
+    }
+
+    setState(() {
+      _isRenting = true;
+    });
+
+    try {
+      final now = DateTime.now();
+      final rental = RentalModel(
+        id: '',
+        userId: user.uid,
+        bookId: _book!.id,
+        bookTitle: _book!.title ?? 'No Title',
+        bookCoverImage: _book!.coverImage,
+        authorName: _book!.author?.name,
+        category: _book!.category?.name,
+        rentalDays: _rentalDays,
+        totalPrice: totalPrice,
+        startDate: now,
+        endDate: now.add(Duration(days: _rentalDays)),
+        createdAt: now,
+      );
+
+      await _rentalService.addRental(rental);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berhasil menyewa buku untuk $_rentalDays hari'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyewa buku: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRenting = false;
+        });
       }
     }
   }
@@ -67,7 +123,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Detail Buku',
+          'Sewa Buku',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
@@ -121,7 +177,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                                 ),
                         ),
                         const SizedBox(width: 16),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +211,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
                     const Text(
                       'Sinopsis',
                       style: TextStyle(
@@ -175,7 +229,6 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       textAlign: TextAlign.justify,
                     ),
                     const SizedBox(height: 24),
-
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -183,6 +236,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,26 +258,102 @@ class _BookDetailPageState extends State<BookDetailPage> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Durasi Sewa (Hari)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
-                                'Harga Buku',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black87,
+                              IconButton(
+                                onPressed: _rentalDays > 1
+                                    ? () {
+                                        setState(() {
+                                          _rentalDays--;
+                                        });
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.remove_circle),
+                                color: const Color(0xFF4682A9),
+                                disabledColor: Colors.grey[300],
+                                iconSize: 32,
+                              ),
+                              Container(
+                                width: 80,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey[300]!),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$_rentalDays',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                              Text(
-                                _book!.details?.price ?? 'Price not available',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black,
-                                ),
+                              IconButton(
+                                onPressed: _rentalDays < 7
+                                    ? () {
+                                        setState(() {
+                                          _rentalDays++;
+                                        });
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.add_circle),
+                                color: const Color(0xFF4682A9),
+                                disabledColor: Colors.grey[300],
+                                iconSize: 32,
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Minimal 1 hari, maksimal 7 hari',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF91C8E4).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'Rp ${totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF4682A9),
+                            ),
                           ),
                         ],
                       ),
@@ -248,72 +378,35 @@ class _BookDetailPageState extends State<BookDetailPage> {
                   ),
                 ],
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                BookRentalPage(bookId: _book!.id),
+              child: ElevatedButton(
+                onPressed: _isRenting ? null : _rentBook,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF91C8E4),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isRenting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF91C8E4),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
                         ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
+                      )
+                    : const Text(
                         'Sewa',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_book!.buyLinks != null &&
-                            _book!.buyLinks!.isNotEmpty &&
-                            _book!.buyLinks!.first.url != null) {
-                          _launchURL(_book!.buyLinks!.first.url!);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Link pembelian tidak tersedia'),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4682A9),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Beli',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
     );

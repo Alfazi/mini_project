@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/datasources/book_api_service.dart';
 import '../../../../data/models/book_model.dart';
 import 'book_detail_page.dart';
+import 'book_rental_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -594,7 +595,13 @@ class _HomePageState extends State<HomePage> {
                             height: 28,
                             child: ElevatedButton(
                               onPressed: () {
-                                // TODO: Sewa
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        BookRentalPage(bookId: book.id),
+                                  ),
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF91C8E4),
