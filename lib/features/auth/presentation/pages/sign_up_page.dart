@@ -183,9 +183,18 @@ class _SignUpPageState extends State<SignUpPage> {
                               errorText: 'Password harus diisi',
                             ),
                             FormBuilderValidators.minLength(
-                              6,
-                              errorText: 'Password minimal 6 karakter',
+                              8,
+                              errorText: 'Password minimal 8 karakter',
                             ),
+                            (value) {
+                              if (value == null || value.isEmpty) return null;
+                              final hasLetter = value.contains(RegExp(r'[a-zA-Z]'));
+                              final hasNumber = value.contains(RegExp(r'[0-9]'));
+                              if (!hasLetter || !hasNumber) {
+                                return 'Password harus terdiri dari huruf dan angka';
+                              }
+                              return null;
+                            },
                           ]),
                         ),
                       ],

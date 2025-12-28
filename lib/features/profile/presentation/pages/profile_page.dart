@@ -4,11 +4,46 @@ import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_event.dart';
 import '../../../auth/bloc/auth_state.dart';
 import '../../../auth/presentation/pages/sign_in_page.dart';
+import '../../../../data/services/user_service.dart';
 import 'rental_history_page.dart';
 import 'faq_page.dart';
+import 'edit_profile_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final UserService _userService = UserService();
+  Map<String, dynamic>? _userData;
+  bool _isLoadingUserData = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final data = await _userService.getUserProfile();
+      if (mounted) {
+        setState(() {
+          _userData = data;
+          _isLoadingUserData = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingUserData = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,24 +94,42 @@ class ProfilePage extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         children: [
                           Center(
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.blue[100],
-                              child: Icon(
-                                Icons.person,
-                                size: 50,
-                                color: Colors.blue[900],
-                              ),
-                            ),
+                            child: _isLoadingUserData
+                                ? const CircularProgressIndicator()
+                                : CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: Colors.blue[100],
+                                    backgroundImage:
+                                        _userData?['photoUrl'] != null
+                                        ? NetworkImage(_userData!['photoUrl'])
+                                        : null,
+                                    child: _userData?['photoUrl'] == null
+                                        ? Icon(
+                                            Icons.person,
+                                            size: 50,
+                                            color: Colors.blue[900],
+                                          )
+                                        : null,
+                                  ),
                           ),
                           const SizedBox(height: 16),
 
                           Center(
                             child: Text(
-                              state.email,
+                              _userData?['username'] ?? state.email,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Center(
+                            child: Text(
+                              state.email,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
                               ),
                             ),
                           ),
@@ -95,15 +148,20 @@ class ProfilePage extends StatelessWidget {
                           _buildMenuItem(
                             icon: Icons.edit,
                             title: 'Edit Profile',
-                            onTap: () {
-                              // TODO: edit profile
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Edit profile belum diimplementasi',
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => EditProfilePage(
+                                    currentEmail: state.email,
+                                    currentUsername: _userData?['username'],
+                                    currentPhotoUrl: _userData?['photoUrl'],
                                   ),
                                 ),
                               );
+                              if (result == true) {
+                                _loadUserData();
+                              }
                             },
                           ),
                           const Divider(),
