@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../data/models/rental_model.dart';
 import '../../../../data/services/rental_service.dart';
 import '../../../home/presentation/pages/book_detail_page.dart';
+import '../../../home/presentation/pages/book_rental_page.dart';
 import 'rental_detail_page.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -44,7 +45,7 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
             Expanded(
               child: StreamBuilder<List<RentalModel>>(
-                stream: _rentalService.getUserRentals(),
+                stream: _rentalService.getAllUserRentals(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -75,7 +76,18 @@ class _LibraryPageState extends State<LibraryPage> {
 
                   final rentals = snapshot.data ?? [];
 
-                  if (rentals.isEmpty) {
+                  final Map<String, RentalModel> uniqueRentals = {};
+                  for (var rental in rentals) {
+                    if (!uniqueRentals.containsKey(rental.bookId) ||
+                        rental.createdAt.isAfter(
+                          uniqueRentals[rental.bookId]!.createdAt,
+                        )) {
+                      uniqueRentals[rental.bookId] = rental;
+                    }
+                  }
+                  final displayRentals = uniqueRentals.values.toList();
+
+                  if (displayRentals.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -115,9 +127,9 @@ class _LibraryPageState extends State<LibraryPage> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
-                    itemCount: rentals.length,
+                    itemCount: displayRentals.length,
                     itemBuilder: (context, index) {
-                      final rental = rentals[index];
+                      final rental = displayRentals[index];
                       return _buildRentalCard(rental);
                     },
                   );
@@ -132,7 +144,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Widget _buildRentalCard(RentalModel rental) {
     final daysLeft = rental.endDate.difference(DateTime.now()).inDays;
-    final isExpired = daysLeft < 0;
+    final isExpired = daysLeft < 0 || rental.status == 'returned';
 
     return GestureDetector(
       onTap: () {
@@ -277,13 +289,23 @@ class _LibraryPageState extends State<LibraryPage> {
                             height: 28,
                             child: ElevatedButton(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        RentalDetailPage(rental: rental),
-                                  ),
-                                );
+                                if (isExpired) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          BookRentalPage(bookId: rental.bookId),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          RentalDetailPage(rental: rental),
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF4682A9),
@@ -294,9 +316,9 @@ class _LibraryPageState extends State<LibraryPage> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: const Text(
-                                'Kembalikan',
-                                style: TextStyle(fontSize: 11),
+                              child: Text(
+                                isExpired ? 'Sewa Lagi' : 'Kembalikan',
+                                style: const TextStyle(fontSize: 11),
                               ),
                             ),
                           ),

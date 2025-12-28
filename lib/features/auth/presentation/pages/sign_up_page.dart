@@ -54,14 +54,21 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Container(
+                    Image.asset(
+                      'assets/images/rak_saku_logo.png',
                       width: 80,
                       height: 80,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black, width: 2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.book_outlined, size: 50),
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black, width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.book_outlined, size: 50),
+                        );
+                      },
                     ),
                     const SizedBox(height: 48),
                     Column(
@@ -188,8 +195,12 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                             (value) {
                               if (value == null || value.isEmpty) return null;
-                              final hasLetter = value.contains(RegExp(r'[a-zA-Z]'));
-                              final hasNumber = value.contains(RegExp(r'[0-9]'));
+                              final hasLetter = value.contains(
+                                RegExp(r'[a-zA-Z]'),
+                              );
+                              final hasNumber = value.contains(
+                                RegExp(r'[0-9]'),
+                              );
                               if (!hasLetter || !hasNumber) {
                                 return 'Password harus terdiri dari huruf dan angka';
                               }

@@ -395,18 +395,25 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
-                      Container(
+                      Image.asset(
+                        'assets/images/rak_saku_logo.png',
                         width: 40,
                         height: 40,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.menu_book, size: 24),
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.black, width: 2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.menu_book, size: 24),
+                          );
+                        },
                       ),
                       const SizedBox(width: 12),
                       const Text(
-                        'Nama App',
+                        'RakSaku',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

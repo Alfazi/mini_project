@@ -56,14 +56,21 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     const SizedBox(height: 32),
                     // Book Icon
-                    Container(
+                    Image.asset(
+                      'assets/images/rak_saku_logo.png',
                       width: 80,
                       height: 80,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black, width: 2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.book_outlined, size: 50),
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black, width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.book_outlined, size: 50),
+                        );
+                      },
                     ),
                     const SizedBox(height: 48),
                     Column(
