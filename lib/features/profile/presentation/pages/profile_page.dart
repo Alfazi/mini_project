@@ -5,6 +5,7 @@ import '../../../auth/bloc/auth_event.dart';
 import '../../../auth/bloc/auth_state.dart';
 import '../../../auth/presentation/pages/sign_in_page.dart';
 import 'rental_history_page.dart';
+import 'faq_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -124,10 +125,10 @@ class ProfilePage extends StatelessWidget {
                             icon: Icons.help_outline,
                             title: 'Bantuan',
                             onTap: () {
-                              // TODO: help (FAQ)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Bantuan belum diimplementasi'),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const FaqPage(),
                                 ),
                               );
                             },
