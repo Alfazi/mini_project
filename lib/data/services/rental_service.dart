@@ -23,6 +23,7 @@ class RentalService {
     return _firestore
         .collection('rentals')
         .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'active')
         .snapshots()
         .map((snapshot) {
           final rentals = snapshot.docs
@@ -43,5 +44,34 @@ class RentalService {
     } catch (e) {
       throw Exception('Failed to get rental: $e');
     }
+  }
+
+  Future<void> returnBook(String rentalId) async {
+    try {
+      await _firestore.collection('rentals').doc(rentalId).update({
+        'status': 'returned',
+      });
+    } catch (e) {
+      throw Exception('Failed to return book: $e');
+    }
+  }
+
+  Stream<List<RentalModel>> getAllUserRentals() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
+    return _firestore
+        .collection('rentals')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          final rentals = snapshot.docs
+              .map((doc) => RentalModel.fromFirestore(doc))
+              .toList();
+          rentals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return rentals;
+        });
   }
 }

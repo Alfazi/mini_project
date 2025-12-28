@@ -4,6 +4,7 @@ import '../../../auth/bloc/auth_bloc.dart';
 import '../../../auth/bloc/auth_event.dart';
 import '../../../auth/bloc/auth_state.dart';
 import '../../../auth/presentation/pages/sign_in_page.dart';
+import 'rental_history_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -107,33 +108,17 @@ class ProfilePage extends StatelessWidget {
                           const Divider(),
                           _buildMenuItem(
                             icon: Icons.history,
-                            title: 'Riwayat Transaksi',
+                            title: 'Riwayat Peminjaman',
                             onTap: () {
-                              // TODO: history
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Riwayat transaksi belum diimplementasi',
-                                  ),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const RentalHistoryPage(),
                                 ),
                               );
                             },
                           ),
-                          // const Divider(),
-                          // _buildMenuItem(
-                          //   icon: Icons.settings,
-                          //   title: 'Pengaturan',
-                          //   onTap: () {
-                          //     // TODO: settings
-                          //     ScaffoldMessenger.of(context).showSnackBar(
-                          //       const SnackBar(
-                          //         content: Text(
-                          //           'Pengaturan belum diimplementasi',
-                          //         ),
-                          //       ),
-                          //     );
-                          //   },
-                          // ),
                           const Divider(),
                           _buildMenuItem(
                             icon: Icons.help_outline,

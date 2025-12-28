@@ -1,11 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/models/rental_model.dart';
+import '../../../../data/services/rental_service.dart';
 
-class RentalDetailPage extends StatelessWidget {
+class RentalDetailPage extends StatefulWidget {
   final RentalModel rental;
 
   const RentalDetailPage({super.key, required this.rental});
+
+  @override
+  State<RentalDetailPage> createState() => _RentalDetailPageState();
+}
+
+class _RentalDetailPageState extends State<RentalDetailPage> {
+  final RentalService _rentalService = RentalService();
+  bool _isReturning = false;
+
+  Future<void> _returnBook() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Kembalikan Buku'),
+        content: Text(
+          'Apakah Anda yakin ingin mengembalikan buku "${widget.rental.bookTitle}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4682A9),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ya, Kembalikan'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() {
+      _isReturning = true;
+    });
+
+    try {
+      await _rentalService.returnBook(widget.rental.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Buku berhasil dikembalikan'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengembalikan buku: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isReturning = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +106,9 @@ class RentalDetailPage extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: rental.bookCoverImage != null
+                    child: widget.rental.bookCoverImage != null
                         ? Image.network(
-                            rental.bookCoverImage!,
+                            widget.rental.bookCoverImage!,
                             width: 120,
                             height: 180,
                             fit: BoxFit.cover,
@@ -72,7 +142,7 @@ class RentalDetailPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          rental.bookTitle,
+                          widget.rental.bookTitle,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -80,16 +150,16 @@ class RentalDetailPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          rental.authorName ?? 'Unknown Author',
+                          widget.rental.authorName ?? 'Unknown Author',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 4),
-                        if (rental.category != null)
+                        if (widget.rental.category != null)
                           Text(
-                            rental.category!,
+                            widget.rental.category!,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -117,7 +187,7 @@ class RentalDetailPage extends StatelessWidget {
                           style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                         Text(
-                          dateFormat.format(rental.startDate),
+                          dateFormat.format(widget.rental.startDate),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -135,7 +205,7 @@ class RentalDetailPage extends StatelessWidget {
                           style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                         Text(
-                          dateFormat.format(rental.endDate),
+                          dateFormat.format(widget.rental.endDate),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -155,7 +225,7 @@ class RentalDetailPage extends StatelessWidget {
                           style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                         Text(
-                          '${rental.rentalDays} Hari',
+                          '${widget.rental.rentalDays} Hari',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -177,7 +247,7 @@ class RentalDetailPage extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Rp ${rental.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}.000',
+                          'Rp ${widget.rental.totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -203,15 +273,55 @@ class RentalDetailPage extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Pastikan mengembalikan buku sebelum tanggal ${dateFormat.format(rental.endDate)}',
+                        'Pastikan mengembalikan buku sebelum tanggal ${dateFormat.format(widget.rental.endDate)}',
                         style: TextStyle(fontSize: 13, color: Colors.blue[900]),
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 100),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: _isReturning ? null : _returnBook,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF91C8E4),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+            ),
+            elevation: 0,
+          ),
+          child: _isReturning
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  'Kembalikan Buku',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );

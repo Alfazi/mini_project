@@ -13,6 +13,7 @@ class RentalModel {
   final DateTime startDate;
   final DateTime endDate;
   final DateTime createdAt;
+  final String status; // 'active' or 'returned'
 
   RentalModel({
     required this.id,
@@ -27,6 +28,7 @@ class RentalModel {
     required this.startDate,
     required this.endDate,
     required this.createdAt,
+    this.status = 'active',
   });
 
   factory RentalModel.fromFirestore(DocumentSnapshot doc) {
@@ -44,6 +46,7 @@ class RentalModel {
       startDate: (data['startDate'] as Timestamp).toDate(),
       endDate: (data['endDate'] as Timestamp).toDate(),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      status: data['status'] ?? 'active',
     );
   }
 
@@ -60,6 +63,7 @@ class RentalModel {
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
       'createdAt': Timestamp.fromDate(createdAt),
+      'status': status,
     };
   }
 }
