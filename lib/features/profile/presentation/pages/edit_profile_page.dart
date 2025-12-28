@@ -265,6 +265,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 controller: _usernameController,
                 decoration: InputDecoration(
                   labelText: 'Username',
+                  hintText: widget.currentUsername ?? 'Masukkan username',
+                  helperText: widget.currentUsername != null
+                      ? 'Username saat ini: ${widget.currentUsername}'
+                      : null,
+                  helperStyle: TextStyle(color: Colors.blue[700], fontSize: 12),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
